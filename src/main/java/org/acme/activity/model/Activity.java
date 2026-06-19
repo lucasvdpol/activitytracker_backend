@@ -29,6 +29,8 @@ public class Activity extends PanacheEntity {
 
     public LocalDateTime endTime;
 
+    public Integer maxParticipants;
+
     @ManyToOne
     @JoinColumn(name = "host_id")
     public User host;

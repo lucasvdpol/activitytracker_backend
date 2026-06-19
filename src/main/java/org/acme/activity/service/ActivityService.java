@@ -12,6 +12,7 @@ import org.acme.activity.dto.ParticipationRequest;
 import org.acme.activity.model.Activity;
 import org.acme.activity.model.ActivityParticipant;
 import org.acme.activity.model.ParticipantStatus;
+import org.acme.groups.service.GroupService;
 import org.acme.user.User;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -27,18 +28,30 @@ public class ActivityService {
     @Inject
     JsonWebToken jwt;
 
+    @Inject
+    GroupService groupService;
+
     @Transactional
     public ActivityResponse create(ActivityRequest request) {
         Activity activity = new Activity();
         activity.name = request.name();
         activity.location = request.location();
         activity.description = request.description();
+        activity.maxParticipants = request.maxParticipants();
         activity.startTime = request.startTime();
         activity.endTime = request.endTime();
         activity.host = currentUser();
+
         activity.persist();
 
-        activity.participants = inviteUsers(activity, request.invitedUserIds());
+        ActivityParticipant hostParticipant = new ActivityParticipant();
+        hostParticipant.activity = activity;
+        hostParticipant.user = activity.host;
+        hostParticipant.status = ParticipantStatus.HOST;
+        hostParticipant.persist();
+
+        activity.participants = new ArrayList<>(List.of(hostParticipant));
+        activity.participants.addAll(inviteUsers(activity, request.invitedUserIds()));
 
         return ActivityResponse.from(activity);
     }
@@ -68,6 +81,7 @@ public class ActivityService {
         activity.name = request.name();
         activity.location = request.location();
         activity.description = request.description();
+        activity.maxParticipants = request.maxParticipants();
         activity.startTime = request.startTime();
         activity.endTime = request.endTime();
         if (request.invitedUserIds() != null) {
@@ -89,6 +103,15 @@ public class ActivityService {
                 .filter(p -> p.user.id.equals(user.id))
                 .findFirst()
                 .orElseThrow(() -> new WebApplicationException("No invite found for this activity", Response.Status.FORBIDDEN));
+
+        if (participant.status == ParticipantStatus.HOST) {
+            throw new WebApplicationException("Host cannot respond to their own invitation", Response.Status.BAD_REQUEST);
+        }
+
+        if (request.accept() && activity.maxParticipants != null
+                && countCurrentParticipants(activity) >= activity.maxParticipants) {
+            throw new WebApplicationException("Activity is already full", Response.Status.CONFLICT);
+        }
 
         participant.status = request.accept() ? ParticipantStatus.ACCEPTED : ParticipantStatus.DECLINED;
         participant.respondedAt = LocalDateTime.now();
@@ -131,11 +154,32 @@ public class ActivityService {
         return activity;
     }
 
+    private long countCurrentParticipants(Activity activity) {
+        return activity.participants.stream()
+                .filter(p -> p.status == ParticipantStatus.ACCEPTED || p.status == ParticipantStatus.HOST)
+                .count();
+    }
+
+    private void assertInvitable(User host, List<Long> userIds) {
+        if (userIds.contains(host.id)) {
+            throw new WebApplicationException("Host cannot invite themselves", Response.Status.BAD_REQUEST);
+        }
+        Set<Long> invitableIds = groupService.sharedGroupMemberIds(host);
+        for (Long userId : userIds) {
+            if (!invitableIds.contains(userId)) {
+                throw new WebApplicationException(
+                        "Can only invite users who share a group with you",
+                        Response.Status.BAD_REQUEST);
+            }
+        }
+    }
+
     private List<ActivityParticipant> inviteUsers(Activity activity, List<Long> userIds) {
         List<ActivityParticipant> participants = new ArrayList<>();
         if (userIds == null || userIds.isEmpty()) {
             return participants;
         }
+        assertInvitable(activity.host, userIds);
         for (User user : User.<User>list("id in ?1", userIds)) {
             ActivityParticipant participant = new ActivityParticipant();
             participant.activity = activity;
@@ -151,9 +195,11 @@ public class ActivityService {
         Set<Long> requestedIds = Set.copyOf(userIds);
         Set<Long> existingIds = activity.participants.stream().map(p -> p.user.id).collect(Collectors.toSet());
 
-        activity.participants.removeIf(p -> !requestedIds.contains(p.user.id));
+        activity.participants.removeIf(p -> p.status != ParticipantStatus.HOST && !requestedIds.contains(p.user.id));
 
-        List<Long> newIds = requestedIds.stream().filter(id -> !existingIds.contains(id)).toList();
+        List<Long> newIds = requestedIds.stream()
+                .filter(id -> !existingIds.contains(id) && !id.equals(activity.host.id))
+                .toList();
         activity.participants.addAll(inviteUsers(activity, newIds));
     }
 }

@@ -9,6 +9,7 @@ public record ActivityRequest(
         @NotBlank String name,
         String location,
         String description,
+        Integer maxParticipants,
         LocalDateTime startTime,
         LocalDateTime endTime,
         List<Long> invitedUserIds) {
