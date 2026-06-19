@@ -1,6 +1,5 @@
-package org.acme.activity.model;
+package org.acme.groups.model;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import org.acme.user.User;
@@ -15,27 +14,20 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name="activities")
-public class Activity extends PanacheEntity {
+@Table(name = "groups")
+public class Group extends PanacheEntity {
 
     @Column(nullable = false)
     public String name;
-
-    public String location;
-
-    public String description;
-
-    public LocalDateTime startTime;
-
-    public LocalDateTime endTime;
-
-    public Integer maxParticipants;
 
     @ManyToOne
     @JoinColumn(name = "host_id")
     public User host;
 
-    @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true)
-    public List<ActivityParticipant> participants;
+    @Column(unique = true, nullable = false)
+    public String joinCode;
+
+    @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    public List<GroupMember> members;
 
 }
