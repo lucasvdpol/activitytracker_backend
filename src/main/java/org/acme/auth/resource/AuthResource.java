@@ -1,4 +1,4 @@
-package org.acme.auth;
+package org.acme.auth.resource;
 
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -8,6 +8,10 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+
+import org.acme.auth.dto.LoginRequest;
+import org.acme.auth.dto.RegisterRequest;
+import org.acme.auth.service.AuthService;
 
 @Path("/auth")
 @Consumes(MediaType.APPLICATION_JSON)

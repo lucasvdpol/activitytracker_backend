@@ -1,4 +1,4 @@
-package org.acme.auth;
+package org.acme.auth.dto;
 
 public record AuthResponse(String token) {
 }
