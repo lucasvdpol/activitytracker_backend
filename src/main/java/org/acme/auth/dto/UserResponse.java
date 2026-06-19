@@ -1,4 +1,4 @@
-package org.acme.auth;
+package org.acme.auth.dto;
 
 import org.acme.user.User;
 
