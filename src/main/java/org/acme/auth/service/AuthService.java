@@ -23,9 +23,6 @@ public class AuthService {
     @ConfigProperty(name = "mp.jwt.verify.issuer")
     String issuer;
 
-    @Inject
-    AuthService authService;
-
     @Transactional
     public UserResponse register(RegisterRequest request) {
         if (User.findByEmail(request.email()) != null) {
