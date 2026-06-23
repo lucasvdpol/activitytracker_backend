@@ -1,0 +1,5 @@
+[phases.build]
+cmds = ["./mvnw package -DskipTests"]
+
+[start]
+cmd = "java -jar target/quarkus-app/quarkus-run.jar"
