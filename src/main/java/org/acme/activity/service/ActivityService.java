@@ -13,6 +13,8 @@ import org.acme.activity.model.Activity;
 import org.acme.activity.model.ActivityParticipant;
 import org.acme.activity.model.ParticipantStatus;
 import org.acme.groups.service.GroupService;
+import org.acme.notification.dto.SendNotificationRequest;
+import org.acme.notification.service.NotificationService;
 import org.acme.user.User;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
@@ -30,6 +32,9 @@ public class ActivityService {
 
     @Inject
     GroupService groupService;
+
+    @Inject
+    NotificationService notificationService;
 
     @Transactional
     public ActivityResponse create(ActivityRequest request) {
@@ -187,6 +192,11 @@ public class ActivityService {
             participant.status = ParticipantStatus.INVITED;
             participant.persist();
             participants.add(participant);
+
+            notificationService.sendNotification(new SendNotificationRequest(
+                    "Nieuwe uitnodiging",
+                    activity.host.name + " heeft je uitgenodigd voor \"" + activity.name + "\"",
+                    user.id));
         }
         return participants;
     }
