@@ -10,6 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.acme.auth.dto.LoginRequest;
+import org.acme.auth.dto.RefreshTokenRequest;
 import org.acme.auth.dto.RegisterRequest;
 import org.acme.auth.service.AuthService;
 
@@ -31,5 +32,18 @@ public class AuthResource {
     @Path("/login")
     public Response login(@Valid LoginRequest request) {
         return Response.ok(authService.login(request)).build();
+    }
+
+    @POST
+    @Path("/refresh")
+    public Response refresh(@Valid RefreshTokenRequest request) {
+        return Response.ok(authService.refresh(request)).build();
+    }
+
+    @POST
+    @Path("/logout")
+    public Response logout(@Valid RefreshTokenRequest request) {
+        authService.logout(request);
+        return Response.noContent().build();
     }
 }
