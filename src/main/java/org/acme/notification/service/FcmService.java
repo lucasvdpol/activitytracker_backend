@@ -57,7 +57,9 @@ public class FcmService {
 
         Message message = Message.builder()
                 .setToken(token)
-                .setNotification(Notification.builder().setTitle(title).setBody(body).build())
+                .putData("title", title)
+                .putData("body", body)
+                .putData("url", "/activities")
                 .build();
 
         try {
