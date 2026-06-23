@@ -1,5 +1,11 @@
+[phases.setup]
+nixPkgs = ["jdk21"]
+
 [phases.build]
 cmds = ["chmod +x mvnw && ./mvnw package -DskipTests"]
 
 [start]
 cmd = "java -jar target/quarkus-app/quarkus-run.jar"
+
+[variables]
+QUARKUS_HTTP_PORT = "8080"
